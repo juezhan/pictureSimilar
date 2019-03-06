@@ -1,20 +1,27 @@
 /*
  * @Author: ttj
  * @Github: https://github.com/tomatoKnightJ
- * @Description: 
+ * @Description: 匹配图片的相似度
  * @Date: 2019-02-28 16:07:38
  */
 const fs = require('fs');
 const path = require('path');
 const { createImageData, loadImage, createCanvas } = require('canvas');
-const basePath = './images/';
+const basePath = process.argv[2] || './images/';
 const imgFolder = path.resolve(__dirname, basePath);
+console.log('basePath',basePath);
+console.log('imgFolder',imgFolder);
 const imgList = fs.readdirSync(imgFolder);
+// 过滤非图片文件
+const filterImgList = imgList.filter((item) => {
+  const reg=/(.*)\.(jpg|bmp|gif|ico|pcx|jpeg|tif|png|raw|tga)$/; 
+  return reg.test(item);
+});
 const canvas = createCanvas(200, 200);
 const ctx = canvas.getContext('2d');
 
 async function shrinkingImg (imgList=[]) {
-  const list = await Promise.all(imgList.map( async item => {
+  const list = (imgList.map( async item => {
     const oImg = await loadImage(imgFolder+'/'+item);
     const imgWidth = 8;
     ctx.clearRect(0,0,imgWidth,imgWidth);
@@ -22,6 +29,8 @@ async function shrinkingImg (imgList=[]) {
     const data = ctx.getImageData(0,0,imgWidth,imgWidth);
     return data.data;
   }));
+  console.log('list',list);
+  
   return list;
 }
 
@@ -36,7 +45,7 @@ async function getHashList (imgList) {
         const newItem2 = item[index-2];
         const newItem3 = item[index-1];
         const gray = (newItem1 + newItem2 + newItem3)/3;
-        itemList.push(~~gray);  
+        itemList.push(~~gray);
       }
     }); 
     const hashData = getHash(itemList);
@@ -87,18 +96,25 @@ function strSimilarity2Percent(s, t){
 	let d = strSimilarity2Number(s, t);
 	return (1-d/l).toFixed(4);
 }
-
-async function getSimilarImgList (imgList=[], limit=0.85) {
+/**
+ * @description: 相似度判断
+ * @param {imgList:Array[文件列表数组], limit:Number[相似度系数]}
+ * @return: 相似度二维数组
+ */
+async function getSimilarImgList (imgList=[], limit=0.85) {  
+  //异常处理
   if (!imgList.length) return [];
+  // 获取图片索引二维数组
   const arr = await getHashList(imgList);
   const array = [];
+  // 已经匹配的图片无需再做遍历
   const includeList = [];
   for (let index = 0,length = arr.length; index < length; index++) {
     const element = arr[index];
     const list = [];
     for (let i = index+1; i < length; i++) {
-      const element1 = arr[i];
-      const percent = strSimilarity2Percent(element, element1);
+      const elementNext = arr[i];
+      const percent = strSimilarity2Percent(element, elementNext);
       const includeItem = includeList.indexOf(i) > 0;
       if (percent>limit && !includeItem) {
         list.push(i);
@@ -113,4 +129,4 @@ async function getSimilarImgList (imgList=[], limit=0.85) {
   return mappingArr;
 }
 
-getSimilarImgList(imgList, 0.75);
+getSimilarImgList(filterImgList, 0.99);
