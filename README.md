@@ -105,5 +105,7 @@ async function getSimilarImgList (imgList=[], limit=0.85) {
 imgFolderPath为要处理的包含图片文件夹  
 imgFolderPath的默认值为此脚本目录下的images
 
+项目源码地址: [https://github.com/tomatoKnightJ/pictureSimilar](https://github.com/tomatoKnightJ/pictureSimilar)
+
 [md语法介绍](http://xianbai.me/learn-md/article/extension/strikethrougn.html)
 
